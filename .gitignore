@@ -16,7 +16,7 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
-*.dll
+# *.dll # commented out so EPPlus dlls can be checked in
 
 # Windows shortcuts
 *.lnk

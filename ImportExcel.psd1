@@ -1,12 +1,31 @@
 @{
     # Assemblies that must be loaded prior to importing this module
-    RequiredAssemblies = @('.\EPPlus.dll')
+    RequiredAssemblies = @(
+        '.\lib\EPPlus.dll',
+        '.\lib\Microsoft.Extensions.Configuration.Abstractions.dll',
+        '.\lib\Microsoft.Extensions.Configuration.dll',
+        '.\lib\Microsoft.Extensions.Configuration.FileExtensions.dll',
+        '.\lib\Microsoft.Extensions.Configuration.Json.dll',
+        '.\lib\Microsoft.Extensions.FileProviders.Abstractions.dll',
+        '.\lib\Microsoft.Extensions.FileProviders.Physical.dll',
+        '.\lib\Microsoft.Extensions.FileSystemGlobbing.dll',
+        '.\lib\Microsoft.Extensions.Primitives.dll',
+        '.\lib\Microsoft.Win32.SystemEvents.dll',
+        '.\lib\System.ComponentModel.Annotations.dll',
+        '.\lib\System.Drawing.Common.dll',
+        '.\lib\System.Formats.Asn1.dll',
+        '.\lib\System.Runtime.CompilerServices.Unsafe.dll',
+        '.\lib\System.Security.Cryptography.Cng.dll',
+        '.\lib\System.Security.Cryptography.Pkcs.dll',
+        '.\lib\System.Text.Encoding.CodePages.dll',
+        '.\lib\System.Xml.XPath.XmlDocument.dll'        
+    )
 
     # Script module or binary module file associated with this manifest.
     RootModule         = 'ImportExcel.psm1'
 
     # Version number of this module.
-    ModuleVersion      = '7.1.1'
+    ModuleVersion      = '8.0.0'
 
     # ID used to uniquely identify this module
     GUID               = '60dd4136-feff-401a-ba27-a84458c57ede'
