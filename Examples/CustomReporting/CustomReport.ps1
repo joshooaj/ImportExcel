@@ -1,4 +1,4 @@
-try {Import-Module $PSScriptRoot\..\..\ImportExcel.psd1} catch {throw ; return}
+try { Import-Module $PSScriptRoot\..\..\ImportExcel.psd1 } catch { throw ; return }
 
 #Get rid of pre-exisiting sheet
 $xlSourcefile = "$env:TEMP\ImportExcelExample.xlsx"
