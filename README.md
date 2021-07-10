@@ -1,5 +1,8 @@
 # README
 
+Open the `ImportExcel` as a remote repo in VS Code, without cloning it.
+
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/dfinke/importexcel)
 ### Donation
 
 If this project helped you reduce the time to get your job done, let me know.
