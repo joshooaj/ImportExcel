@@ -1,9 +1,5 @@
 ﻿#region import everything we need
-$culture = $host.CurrentCulture.Name -replace '-\w*$', ''
-Import-LocalizedData  -UICulture $culture -BindingVariable Strings -FileName Strings -ErrorAction Ignore
-if (-not $Strings) {
-    Import-LocalizedData  -UICulture "en" -BindingVariable Strings -FileName Strings -ErrorAction Ignore
-}
+Import-LocalizedData -BindingVariable 'Strings' -FileName 'strings' -BaseDirectory "$PSScriptRoot/Localized"
 try { [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing") }
 catch { Write-Warning -Message $Strings.SystemDrawingAvailable }
 
@@ -40,18 +36,10 @@ if (($IsLinux -or $IsMacOS) -or $env:NoAutoSize) {
     catch {
         $env:NoAutoSize = $true
         if ($IsLinux) {
-            $msg = @"
-ImportExcel Module Cannot Autosize. Please run the following command to install dependencies:
-apt-get -y update && apt-get install -y --no-install-recommends libgdiplus libc6-dev
-"@
-            Write-Warning -Message $msg
+            Write-Warning -Message $Strings.NoAutoSizeLinux
         }
         if ($IsMacOS) {
-            $msg = @"
-ImportExcel Module Cannot Autosize. Please run the following command to install dependencies:
-brew install mono-libgdiplus
-"@
-            Write-Warning -Message $msg
+            Write-Warning -Message $Strings.NoAutoSizeMacOS
         }
     }
     finally {
