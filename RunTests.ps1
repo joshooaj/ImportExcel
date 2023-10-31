@@ -1,6 +1,6 @@
-#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.1.0' }
+#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.2.0' }
 param(
-    [Parameter()]
+    [Parameter(Position = 0)]
     [string]
     $ModulePath,
 
@@ -32,9 +32,9 @@ if ($NoIsolation) {
         exit 1
     }
 } else {
-    $cmd = (Get-Process -Id $PID).ProcessName
-    $scriptPath = Join-Path -Path $PWD -ChildPath $MyInvocation.MyCommand.Name
-    $command = ".'$scriptPath' -ModulePath '$ModulePath' -NoIsolation"
-    & $cmd -NoLogo -NoProfile -ExecutionPolicy Bypass -WorkingDirectory "$PWD" -Command $command
+    $pwsh = (Get-Process -Id $PID).ProcessName
+    $scriptPath = Join-Path -Path $PSScriptRoot -ChildPath $MyInvocation.MyCommand.Name
+    $pwshArgs = '-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $scriptPath, $ModulePath, '-NoIsolation'
+    & $pwsh $pwshArgs
     exit $LASTEXITCODE
 }
