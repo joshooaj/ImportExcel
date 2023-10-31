@@ -10,7 +10,7 @@ try {
     }
     foreach ($directory in $dotSources) {
         $directory = $directory.Trim()
-        foreach ($file in Get-ChildItem -Path "$Directory\*.ps1") {
+        foreach ($file in Get-ChildItem -Path "$PSScriptRoot/$Directory/*.ps1") {
             . $file.FullName
         }
     }
