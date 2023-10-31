@@ -21,7 +21,7 @@ jobs:
         shell: pwsh
         run: |
           $result = ./build.ps1
-          "ManifestPath=$($result.Output.ManifestPath" | Add-Content "$($env:GITHUB_OUTPUT)"
+          "ManifestPath=$($result.Output.ManifestPath)" | Add-Content "$($env:GITHUB_OUTPUT)"
       
       - name: Test
         shell: pwsh
