@@ -3,6 +3,7 @@ using namespace System.Collections.Generic
 [OutputType([hashtable])]
 param()
 
+$ErrorActionPreference = 'Stop'
 $manifest = Import-PowerShellDataFile -Path $PSScriptRoot/ImportExcel/ImportExcel.psd1 
 $outputFolder = Join-Path -Path $PSScriptRoot -ChildPath "Output/ImportExcel/$($manifest.ModuleVersion)"
 
