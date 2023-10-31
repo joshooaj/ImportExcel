@@ -15,13 +15,18 @@ if ([string]::IsNullOrEmpty($ModulePath)) {
 
 if ($NoIsolation) {
     $configuration = [PesterConfiguration]@{
-        Run    = @{
+        Run        = @{
             PassThru  = $true
             Container = New-PesterContainer -Path '__tests__/' -Data @{ 
                 ModulePath = $ModulePath
             }
         }
-        Output = @{
+        TestResult = @{
+            Enabled      = $true
+            OutputFormat = 'NUnitXml'
+            OutputPath   = 'Output/testResults.xml'
+        }
+        Output     = @{
             Verbosity = 'Detailed'
         }
     }
