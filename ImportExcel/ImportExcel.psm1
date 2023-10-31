@@ -3,9 +3,21 @@ Import-LocalizedData -BindingVariable 'Strings' -FileName 'strings' -BaseDirecto
 try { [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Drawing") }
 catch { Write-Warning -Message $Strings.SystemDrawingAvailable }
 
-foreach ($directory in @('Private', 'Public', 'Charting', 'InferData', 'Pivot')) {
-    Get-ChildItem -Path "$PSScriptRoot\$directory\*.ps1" | ForEach-Object { . $_.FullName }
+#region Dot-Sourced Functions
+try {
+    $dotSources = Get-Content -Path $PSScriptRoot/dot-sources.txt -ErrorAction Stop | Where-Object {
+        $_ -notmatch '^\s*#' -and -not [string]::IsNullOrWhiteSpace($_)
+    }
+    foreach ($directory in $dotSources) {
+        $directory = $directory.Trim()
+        foreach ($file in Get-ChildItem -Path "$Directory\*.ps1") {
+            . $file.FullName
+        }
+    }
+} catch {
+    throw
 }
+#endregion
 
 if ($PSVersionTable.PSVersion.Major -ge 5) {
     . $PSScriptRoot\Plot.ps1
