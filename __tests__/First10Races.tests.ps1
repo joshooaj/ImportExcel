@@ -59,30 +59,30 @@ Describe "Creating small named ranges with hyperlinks" {
         $expectedRows = 1 + $m.count + $m.sum
     }
     Context "Creating hyperlinks" {
-        it "Put the data into the sheet and created the expected named ranges                      " {
+        it "Put the data into the sheet and created the expected named ranges" {
             $sheet.Dimension.Rows                                       | Should      -Be  $expectedRows
             $sheet.Dimension.Columns                                    | Should      -Be  $columns
             $sheet.Names.Count                                          | Should      -Be ($columns + $results.Count)
             $sheet.Names[$results[0].Name]                              | Should -Not -BenullorEmpty
             $sheet.Names[$results[-1].Name]                             | Should -Not -BenullorEmpty
         }
-        it "Added hyperlinks to the named ranges                                                   " {
+        it "Added hyperlinks to the named ranges" {
             $sheet.cells["a1"].Hyperlink.Display                        | Should      -Match $results[0].Name
             $sheet.cells["a1"].Hyperlink.ReferenceAddress               | Should      -Match $results[0].Name
         }
     }
     Context "Adding calculated column" {
-        It "Populated the cells with the right heading and formulas                                " {
+        It "Populated the cells with the right heading and formulas" {
             $sheet.Cells[(  $results.Count), $columns]                   | Should      -BenullorEmpty
             $sheet.Cells[(1 + $results.Count), $columns].Value             | Should      -Be "PlacesGained/Lost"
             $sheet.Cells[(2 + $results.Count), $columns].Formula           | Should      -Be "GridPosition-FinishPosition"
             $sheet.Names["PlacesGained_Lost"]                           | Should -Not -BenullorEmpty
         }
-        It "Performed the calculation                                                              " {
+        It "Performed the calculation" {
             $placesMade = $Sheet.Cells[(2 + $results.Count), 5].value - $Sheet.Cells[(2 + $results.Count), 3].value
             $sheet.Cells[(2 + $results.Count), $columns].value             | Should -Be $placesmade
         }
-        It "Applied ConditionalFormatting, including StopIfTrue, Priority                          " {
+        It "Applied ConditionalFormatting, including StopIfTrue, Priority" {
             $sheet.ConditionalFormatting[0].Address.Start.Column        | Should      -Be $columns
             $sheet.ConditionalFormatting[0].Address.End.Column          | Should      -Be $columns
             $sheet.ConditionalFormatting[0].Address.End.Row             | Should      -Be $expectedRows
@@ -92,8 +92,7 @@ Describe "Creating small named ranges with hyperlinks" {
             $sheet.ConditionalFormatting[1].Priority                    | Should      -Be 1
             $sheet.ConditionalFormatting[1].StopIfTrue                  | Should      -Be $true
         }
-        It "Applied ConditionalFormatting, including Reverse                                       " {
-            Set-ItResult -Pending -Because "Bug in EPPLus 4.5"
+        It "Applied ConditionalFormatting, including Reverse" -Skip:([bool]'Bug in EPPLus 4.5') {
             $sheet.ConditionalFormatting[3].LowValue.Color.R            | Should      -BegreaterThan 180
             $sheet.ConditionalFormatting[3].LowValue.Color.G            | Should      -BeLessThan 128
             $sheet.ConditionalFormatting[3].HighValue.Color.R           | Should      -BeLessThan 128
@@ -101,7 +100,7 @@ Describe "Creating small named ranges with hyperlinks" {
         }
     }
     Context "Adding a table" {
-        it "Created a table                                                                        " {
+        it "Created a table" {
             $sheet.tables[0]                                            | Should -Not -BeNullOrEmpty
             $sheet.tables[0].Address.Start.Column                       | Should      -Be 1
             $sheet.tables[0].Address.End.Column                         | Should      -Be $columns
@@ -113,7 +112,7 @@ Describe "Creating small named ranges with hyperlinks" {
         }
     }
     Context "Adding Pivot tables" {
-        it "Added a worksheet with a pivot table grouped by date                                   " {
+        it "Added a worksheet with a pivot table grouped by date" {
             $excel.Points1                                              | Should -Not -BeNullOrEmpty
             $excel.Points1.PivotTables.Count                            | Should      -Be 1
             $pt = $excel.Points1.PivotTables[0]
@@ -125,7 +124,7 @@ Describe "Creating small named ranges with hyperlinks" {
             $pt.RowFields[2].name                                       | Should      -Be "date"
             $pt.RowFields[2].Grouping                                   | Should -Not -BenullorEmpty
         }
-        it "Added a worksheet with a pivot table grouped by Number                                 " {
+        it "Added a worksheet with a pivot table grouped by Number" {
             $excel.Places1                                              | Should -Not -BeNullOrEmpty
             $excel.Places1.PivotTables.Count                            | Should      -Be 1
             $pt = $excel.Places1.PivotTables[0]

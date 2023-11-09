@@ -44,24 +44,23 @@ Describe "Join Worksheet part 1" {
         $pc = $excel.Workbook.Worksheets["SummaryPivot"].Drawings[0]
     }
     Context "Export-Excel setting spreadsheet visibility" {
-        it "Hid the worksheets                                                                     " {
+        it "Hid the worksheets" {
             $excel.Workbook.Worksheets["Oxford"].Hidden                 | Should      -Be 'Hidden'
             $excel.Workbook.Worksheets["Banbury"].Hidden                | Should      -Be 'Hidden'
             $excel.Workbook.Worksheets["Abingdon"].Hidden               | Should      -Be 'Hidden'
         }
-        it "Un-hid two of the worksheets                                                           " {
+        it "Un-hid two of the worksheets" {
             $excel.Workbook.Worksheets["Total"].Hidden                  | Should      -Be 'Visible'
             $excel.Workbook.Worksheets["SummaryPivot"].Hidden           | Should      -Be 'Visible'
         }
-        it "Activated the correct worksheet                                                        " {
-            Set-ItResult -Pending -Because "Bug in EPPLus 4.5"
+        it "Activated the correct worksheet" -Skip:([bool]'Bug in EPPlus 4.5') {
             $excel.Workbook.worksheets["SummaryPivot"].View.TabSelected | Should      -Be $true
             $excel.Workbook.worksheets["Total"].View.TabSelected        | Should      -Be $false
         }
 
     }
     Context "Merging 3 blocks" {
-        it "Created sheet of the right size with a title and a table                               " {
+        it "Created sheet of the right size with a title and a table" {
             $ws.Dimension.Address                                       | Should      -Be "A1:F16"
             $ws.Tables[0].Address.Address                               | Should      -Be "A2:F16"
             $ws.Cells["A1"].Value                                       | Should      -Be "Store Sales Summary"
@@ -72,18 +71,18 @@ Describe "Join Worksheet part 1" {
             $ws.Tables[0].StyleName                                     | Should      -Be "TableStyleLight1"
             $ws.Cells["A2:F2"].Style.Font.Bold                          | Should      -Be $True
         }
-        it "Added a from column with the right heading                                             " {
+        it "Added a from column with the right heading" {
             $ws.Cells["F2" ].Value                                      | Should      -Be "Store"
             $ws.Cells["F3" ].Value                                      | Should      -Be "Oxford"
             $ws.Cells["F8" ].Value                                      | Should      -Be "Abingdon"
             $ws.Cells["F13"].Value                                      | Should      -Be "Banbury"
         }
-        it "Filled in the data                                                                     " {
+        it "Filled in the data" {
             $ws.Cells["C3" ].Value                                      | Should      -Be $data1[0].quantity
             $ws.Cells["C8" ].Value                                      | Should      -Be $data2[0].quantity
             $ws.Cells["C13"].Value                                      | Should      -Be $data3[0].quantity
         }
-        it "Created the pivot table                                                                " {
+        it "Created the pivot table" {
             $pt                                                         | Should -Not -BeNullOrEmpty
             $pt.StyleName                                               | Should      -Be "PivotStyleMedium9"
             $pt.RowFields[0].Name                                       | Should      -Be "Store"
@@ -120,11 +119,11 @@ Describe "Join Worksheet part 1" {
 #         $ws = $excel.Workbook.Worksheets["Summary"]
 #     }
 #     Context "Bringing 3 Unlinked blocks onto one page" {
-#         it "Hid the source worksheets                                                              " {
+#         it "Hid the source worksheets" {
 #             $excel.Workbook.Worksheets[1].Hidden.tostring()             | Should      -Be "Hidden"
 #             $excel.Workbook.Worksheets[2].Hidden.tostring()             | Should      -Be "Hidden"
 #         }
-#         it "Created the Summary sheet with title, and block labels, and copied the correct data    " {
+#         it "Created the Summary sheet with title, and block labels, and copied the correct data" {
 #             $ws.Cells["A1"].Value                                       | Should      -Be "Summary"
 #             $ws.Cells["A2"].Value                                       | Should      -Be $excel.Workbook.Worksheets[1].name
 #             $ws.Cells["A3"].Value                                       | Should      -Be $excel.Workbook.Worksheets[1].Cells["A1"].value
@@ -182,7 +181,7 @@ Describe "Join Worksheet part 2" -Tags JoinWorksheetPart2 {
             $excel.Workbook.Worksheets[2].Hidden.ToString() | Should -Be "Hidden"
         }       
 
-        It "Tests creating the Summary sheet with title, and block labels, and copied the correct data    " {
+        It "Tests creating the Summary sheet with title, and block labels, and copied the correct data" {
             $ws.Cells["A1"].Value | Should -Be "Summary"
             $ws.Cells["A2"].Value | Should -Be $excel.Workbook.Worksheets[1].name
             $ws.Cells["A3"].Value | Should -Be $excel.Workbook.Worksheets[1].Cells["A1"].value

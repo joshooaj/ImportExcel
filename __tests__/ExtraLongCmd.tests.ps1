@@ -54,8 +54,7 @@ Apple, New York, 1200,700
             $ws2.PivotTables[0].RowGrandTotals                          | Should      -Be $true
             $ws2.PivotTables[0].ColumGrandTotals                        | Should      -Be $true   #Epplus's mis-spelling of column not mine
         }
-        it "Made the PivotTable page active                                                        " {
-            Set-ItResult -Pending -Because "Bug in EPPLus 4.5"
+        it "Made the PivotTable page active                                                        " -Skip:([bool]'Bug in EPPLus 4.5') {
             $ws2.View.TabSelected                                       | Should      -Be $true
         }
         it "Created the Pivot Chart                                                                " {

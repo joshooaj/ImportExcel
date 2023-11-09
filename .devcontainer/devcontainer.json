@@ -18,6 +18,7 @@
             },
             "extensions": [
                 "ms-vscode.powershell",
+                "pspester.pester-test",
                 "redhat.vscode-yaml",
                 "eamodio.gitlens"
             ]

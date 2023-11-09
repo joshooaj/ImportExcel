@@ -40,7 +40,6 @@
         [Switch]$Raw
     )
     end {
-        $sw = [System.Diagnostics.Stopwatch]::StartNew()
         if ($input) {
             $Paths = $input
         }

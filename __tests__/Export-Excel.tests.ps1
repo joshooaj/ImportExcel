@@ -527,8 +527,7 @@ Describe ExportExcel -Tag "ExportExcel" {
             $Excel.Workbook.Worksheets.Count                            | Should      -BeGreaterOrEqual 2
             $excel.Workbook.Worksheets["Processes"].Dimension.rows      | Should      -Be 21    #20 data + 1 header
         }
-        it "Selected  the Pivottable page                                                          " {
-            Set-ItResult -Pending -Because "Bug in EPPLus 4.5"
+        it "Selected  the Pivottable page                                                          " -Skip:([bool]'Bug in EPPLus 4.5') {
             $PTws.View.TabSelected                                      | Should      -Be $true
         }
         it "Built the expected Pivot table                                                         " {

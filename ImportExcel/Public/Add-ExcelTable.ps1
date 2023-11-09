@@ -99,7 +99,7 @@ function Add-ExcelTable {
 
                 # Set comment on totals row
                 If ($TableTotalSettings[$k] -is [HashTable] -and $TableTotalSettings[$k].Keys -contains "Comment" -and ![String]::IsNullOrEmpty($TableTotalSettings[$k]["Comment"])) {
-                    $ColumnLetter = [officeOpenXml.ExcelAddress]::GetAddressCol(($tbl.columns | ? { $_.name -eq $k }).Id, $False)
+                    $ColumnLetter = [officeOpenXml.ExcelAddress]::GetAddressCol(($tbl.columns | Where-Object { $_.name -eq $k }).Id, $False)
                     $CommentRange = "{0}{1}" -f $ColumnLetter, $tbl.Address.End.Row
 
                     $CellCommentParams = @{

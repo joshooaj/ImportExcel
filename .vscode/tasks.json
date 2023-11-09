@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "build",
-            "command": "${workspaceFolder}\\build.ps1 | Out-Null",
+            "command": "${workspaceFolder}\\build.ps1 -Task Build",
             "type": "shell",
             "args": [],
             "group": {
@@ -11,14 +11,14 @@
                 "isDefault": true
             },
             "presentation": {
-                "reveal": "silent"
+                "reveal": "always"
             }
         },
         {
             "label": "test",
-            "command": "${workspaceFolder}\\RunTests.ps1",
+            "command": "${workspaceFolder}\\build.ps1 -Task Test",
             "type": "shell",
-            "args": ["-NoIsolation"],
+            "args": [],
             "group": {
                 "kind": "test",
                 "isDefault": true

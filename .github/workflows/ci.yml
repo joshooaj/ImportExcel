@@ -20,7 +20,7 @@ jobs:
         id: build
         shell: pwsh
         run: |
-          $result = ./build.ps1
+          $result = ./build.ps1 -Task Build -NoIsolation -PassThru
           "ManifestPath=$($result.Output.ManifestPath)" | Add-Content "$($env:GITHUB_OUTPUT)"
       
       - name: Test
@@ -31,11 +31,11 @@ jobs:
             Invoke-Restmethod https://download.microsoft.com/download/3/5/C/35C84C36-661A-44E6-9324-8786B8DBE231/accessdatabaseengine_X64.exe -OutFile ./ace/ace.exe
             Start-Process ./ace/ace.exe -Wait -ArgumentList "/quiet /passive /norestart"
           }
-          ./RunTests.ps1 -ModulePath ${{ steps.build.outputs.ManifestPath }} -NoIsolation
+          ./build.ps1 -Task Test -ModulePath ${{ steps.build.outputs.ManifestPath }} -NoIsolation
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action/composite@v2
         if: always()
         with:
           files: |
-            Output/testResults.xml
+            Output/*.xml

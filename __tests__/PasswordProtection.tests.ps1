@@ -1,12 +1,4 @@
-﻿
-
-Describe "Password Support" {
-    if ($PSVersionTable.PSVersion.Major -GT 5) {
-        It "Password Supported" {
-            Set-ItResult -Pending -Because "Can't test passwords on V6 and later"
-        }
-        return
-    }
+﻿Describe "Password Support" -Skip:($PSVersionTable.PSVersion.Major -gt 5) {
     Context "Password protected sheet" {
         BeforeAll  {
             $password = "YouMustRememberThis"

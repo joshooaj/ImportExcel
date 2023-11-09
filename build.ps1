@@ -1,22 +1,68 @@
+#Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.2.0' }
 using namespace System.Collections.Generic
 using namespace System.IO
 using namespace System.Text.RegularExpressions
 
 [CmdletBinding()]
 [OutputType([hashtable])]
-param()
+param(
+    [Parameter()]
+    [ValidateSet('Build', 'Test')]
+    [string]
+    $Task = 'Build',
+
+    [Parameter()]
+    [string]
+    $ModulePath,
+
+    [Parameter()]
+    [switch]
+    $NoIsolation,
+
+    [Parameter()]
+    [switch]
+    $NoExit,
+
+    [Parameter()]
+    [switch]
+    $PassThru
+)
+
+function Get-CommandPathWithArgs {
+    [CmdletBinding()]
+    param()
+
+    process {
+        $frame = Get-PSCallStack | Select-Object -Skip 1 -First 1
+        [pscustomobject]@{
+            Shell      = (Get-Process -Id $PID).ProcessName
+            ScriptName = $frame.ScriptName
+            Arguments  = $frame.InvocationInfo.BoundParameters.GetEnumerator() | ForEach-Object {
+                '-{0}' -f $_.Key
+                if ($_.Value -isnot [switch]) {
+                    $_.Value
+                }
+            }
+        }
+    }
+}
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-if ($null -eq (Get-Module -ListAvailable -Name platyPS | Where-Object Version -eq '0.14.2')) {
-    Write-Host "Installing platyPS" -ForegroundColor Green
-    Install-Module -Name platyPS -RequiredVersion '0.14.2' -Force -Scope CurrentUser -ErrorAction Stop
+if (-not $NoIsolation) {
+    $info = Get-CommandPathWithArgs
+    Write-Verbose "Isolating command: $($info.ScriptName) $($info.Arguments -join ' ')"
+    & $info.Shell -NoProfile -NoLogo -NonInteractive -File $info.ScriptName $info.Arguments -NoIsolation
+    if ($NoExit) {
+        return
+    }
+    exit $LASTEXITCODE
 }
 
 $manifest = Import-PowerShellDataFile -Path $PSScriptRoot/ImportExcel/ImportExcel.psd1 
 $outputFolder = Join-Path -Path $PSScriptRoot -ChildPath "Output/ImportExcel/$($manifest.ModuleVersion)"
-
+        
 $Build = @{
     ProjectRoot = $PSScriptRoot
     Module      = $manifest
@@ -29,117 +75,167 @@ $Build = @{
         Locale    = 'en-US'
         Directory = Join-Path -Path $PSScriptRoot -ChildPath './docs/commands'
     }
+    TestResults = $null
 }
 
-# Stage module in output directory
-Write-Host "Copying ./ImportExcel/* to $($Build.Output.Directory)" -ForegroundColor Green
-$null = New-Item -Path $Build.Output.Directory -ItemType Directory -Force
-Get-ChildItem -Path $Build.Output.Directory | Remove-Item -Recurse
-Get-ChildItem -Path ./ImportExcel/ | Copy-Item -Destination $Build.Output.Directory -Recurse
-
-# Embed dot-sourced functions in the PSM1 file
-Write-Host "Merging .PS1 files into ImportExcel.psm1" -ForegroundColor Green
-try {
-    Push-Location -Path $Build.Output.Directory
-    $usings = @{}
-    $content = [text.stringbuilder]::new()
-    $usingPattern = [regex]::new('^using .+$', [Text.RegularExpressions.RegexOptions]::IgnoreCase)
-    $dotSources = Get-Content -Path 'dot-sources.txt' -ErrorAction Stop | Where-Object {
-        $_ -notmatch '^\s*#' -and -not [string]::IsNullOrWhiteSpace($_)
-    }
-    $dotSources | Get-ChildItem | Where-Object Extension -EQ '.ps1' | Get-Content | ForEach-Object {
-        if ($usingPattern.IsMatch($_)) {
-            # Gather any "usings" from files that are normally dot-sourced during dev
-            $usings[$usingPattern.Match($_).Value] = $null
-        } else {
-            $null = $content.AppendLine($_)
-        }
-    }
-    
-    $newPSM1 = [text.stringbuilder]::new()
-    $insideDotSourcedRegion = $false
-    Get-Content -Path $Build.Output.RootModulePath | ForEach-Object {
-        # Merge all "usings" from merged files into the top of the resulting PSM1 file
-        if ($usingPattern.IsMatch($_)) {
-            $usings[$usingPattern.Match($_).Value] = $null
-            return
+switch ($Task) {
+    'Build' {
+        if ($null -eq (Get-Module -ListAvailable -Name platyPS | Where-Object Version -EQ '0.14.2')) {
+            Write-Host "Installing platyPS" -ForegroundColor Green
+            Install-Module -Name platyPS -RequiredVersion '0.14.2' -Force -Scope CurrentUser -ErrorAction Stop
         }
         
-        if ($usings.Count) {
-            $usings.Keys | Sort-Object | ForEach-Object {
+        
+        
+        # Stage module in output directory
+        Write-Host "Copying ./ImportExcel/* to $($Build.Output.Directory)" -ForegroundColor Green
+        $null = New-Item -Path $Build.Output.Directory -ItemType Directory -Force
+        Get-ChildItem -Path $Build.Output.Directory | Remove-Item -Recurse
+        Get-ChildItem -Path ./ImportExcel/ | Copy-Item -Destination $Build.Output.Directory -Recurse
+        
+        # Embed dot-sourced functions in the PSM1 file
+        Write-Host "Merging .PS1 files into ImportExcel.psm1" -ForegroundColor Green
+        try {
+            Push-Location -Path $Build.Output.Directory
+            $usings = @{}
+            $content = [text.stringbuilder]::new()
+            $usingPattern = [regex]::new('^using .+$', [Text.RegularExpressions.RegexOptions]::IgnoreCase)
+            $dotSources = Get-Content -Path 'dot-sources.txt' -ErrorAction Stop | Where-Object {
+                $_ -notmatch '^\s*#' -and -not [string]::IsNullOrWhiteSpace($_)
+            }
+            $dotSources | Get-ChildItem | Where-Object Extension -EQ '.ps1' | Get-Content | ForEach-Object {
+                if ($usingPattern.IsMatch($_)) {
+                    # Gather any "usings" from files that are normally dot-sourced during dev
+                    $usings[$usingPattern.Match($_).Value] = $null
+                } else {
+                    $null = $content.AppendLine($_)
+                }
+            }
+            
+            $newPSM1 = [text.stringbuilder]::new()
+            $insideDotSourcedRegion = $false
+            Get-Content -Path $Build.Output.RootModulePath | ForEach-Object {
+                # Merge all "usings" from merged files into the top of the resulting PSM1 file
+                if ($usingPattern.IsMatch($_)) {
+                    $usings[$usingPattern.Match($_).Value] = $null
+                    return
+                }
+                
+                if ($usings.Count) {
+                    $usings.Keys | Sort-Object | ForEach-Object {
+                        $null = $newPSM1.Append("$_`r`n")
+                    }
+                    $usings.Clear()
+                }
+            
+                if ($_ -eq '#region Dot-Sourced Functions') {
+                    $insideDotSourcedRegion = $true
+                    $null = $newPSM1.Append("$content`r`n")
+                    return
+                }
+            
+                if ($insideDotSourcedRegion) {
+                    if ($_ -eq '#endregion') {
+                        $insideDotSourcedRegion = $false
+                        $null = $content.Clear()
+                    }
+                    return
+                }
+            
                 $null = $newPSM1.Append("$_`r`n")
             }
-            $usings.Clear()
-        }
-    
-        if ($_ -eq '#region Dot-Sourced Functions') {
-            $insideDotSourcedRegion = $true
-            $null = $newPSM1.Append("$content`r`n")
-            return
-        }
-    
-        if ($insideDotSourcedRegion) {
-            if ($_ -eq '#endregion') {
-                $insideDotSourcedRegion = $false
-                $null = $content.Clear()
+            if ($content.Length) {
+                throw "An error occurred while embedding files from directories referenced in dot-sources.txt.
+                Was the opening '#region Dot-Sourced Functions' or closing '#endregion' modified or removed?"
             }
-            return
+            $newPSM1.ToString() | Set-Content -Path $Build.Output.RootModulePath
+            $dotSources | Remove-Item -Recurse
+            Remove-Item -Path 'dot-sources.txt'
+        } finally {
+            Pop-Location
         }
-    
-        $null = $newPSM1.Append("$_`r`n")
+        
+        # Update docs
+        Write-Host "Generating / updating markdown help" -ForegroundColor Green
+        Import-Module $Build.Output.ManifestPath -Force
+        $null = New-Item -Path $Build.Docs.Directory -ItemType Directory -Force
+        $existingHelp = (Get-ChildItem -Path "$($Build.Docs.Directory)/*.md").BaseName
+        $newCommands = Get-Command -Module ImportExcel -CommandType Function, Cmdlet | Where-Object Name -NotIn $existingHelp
+        if ($existingHelp) {
+            $null = Update-MarkdownHelp -Path $Build.Docs.Directory -AlphabeticParamsOrder -ExcludeDontShow
+        }
+        if ($newCommands) {
+            $newHelpArgs = @{
+                Module                = 'ImportExcel'
+                OutputFolder          = $Build.Docs.Directory
+                Locale                = $Build.Docs.Locale
+                AlphabeticParamsOrder = $true
+                ExcludeDontShow       = $true
+                ErrorAction           = 'SilentlyContinue'
+            }
+            $null = New-MarkdownHelp @newHelpArgs
+        }
+        
+        # Add online help URL for all commands
+        Write-Host "Updating online help URLs" -ForegroundColor Green
+        $onlineversionpattern = [regex]::new('(?<=\n)online version:.*?(?=[\r\n])', ([RegexOptions]::IgnoreCase, [RegexOptions]::Multiline))
+        foreach ($path in [io.directory]::EnumerateFiles($Build.Docs.Directory, '*.md')) {
+            $baseName = ([fileinfo]$path).BaseName
+            $content = [file]::ReadAllText($path)
+            $content = $onlineVersionPattern.Replace($content, "online version: https://dfinke.github.io/ImportExcel/commands/$baseName")
+            [file]::WriteAllText($path, $content)
+        }
+        $null = New-ExternalHelp -Path $Build.Docs.Directory -OutputPath (Join-Path -Path $Build.Output.Directory -ChildPath $Build.Docs.Locale)
+        
+        # TODO: Consider whether or not to support "updatable help"
+        # The New-ExternalHelpCab generates both a ZIP (PS 6+) and a CAB (all versions)
+        # [reference](https://learn.microsoft.com/en-us/powershell/utility-modules/platyps/create-help-using-platyps?view=ps-modules)
+        # 
+        # $newCabArgs = @{
+        #     CabFilesFolder  = Join-Path -Path $Build.Output.Directory -ChildPath $Build.Docs.Locale
+        #     LandingPagePath = "$PSScriptRoot/docs/ImportExcel.md"
+        #     OutputFolder    = "$PSScriptRoot/docs/"
+        # }
+        # New-ExternalHelpCab @newCabArgs
     }
-    if ($content.Length) {
-        throw "An error occurred while embedding files from directories referenced in dot-sources.txt.
-        Was the opening '#region Dot-Sourced Functions' or closing '#endregion' modified or removed?"
+
+    'Test' {
+        if ([string]::IsNullOrEmpty($ModulePath)) {
+            $basePath = if ($PSScriptRoot) { $PSScriptRoot } else { $PWD.Path }
+            $ModulePath = Join-Path -Path $basePath -ChildPath 'ImportExcel/ImportExcel.psd1'
+        }
+        $ModulePath | Should -Exist -ErrorAction Stop
+        $ModulePath | Should -Match 'ImportExcel.psd1$'
+
+        $configuration = [PesterConfiguration]@{
+            Run        = @{
+                Exit      = -not $NoExit
+                PassThru  = $true
+                Container = New-PesterContainer -Path '__tests__/' -Data @{ 
+                    ModulePath = $ModulePath
+                }
+            }
+            TestResult = @{
+                Enabled      = $true
+                OutputFormat = 'NUnitXml'
+                OutputPath   = 'Output/testResults.xml'
+            }
+            Output     = @{
+                Verbosity = 'Normal'
+            }
+        }
+        
+        $Build.TestResults = Invoke-Pester -Configuration $configuration
+        if (-not $NoExit -and ($Build.TestResults.FailedCount -or -not $Build.TestResults.PassedCount)) {
+            exit 1
+        }
     }
-    $newPSM1.ToString() | Set-Content -Path $Build.Output.RootModulePath
-    $dotSources | Remove-Item -Recurse
-    Remove-Item -Path 'dot-sources.txt'
-} finally {
-    Pop-Location
-}
 
-# Update docs
-Write-Host "Generating / updating markdown help" -ForegroundColor Green
-Import-Module $Build.Output.ManifestPath -Force
-$null = New-Item -Path $Build.Docs.Directory -ItemType Directory -Force
-$existingHelp = (Get-ChildItem -Path "$($Build.Docs.Directory)/*.md").BaseName
-$newCommands = Get-Command -Module ImportExcel -CommandType Function, Cmdlet | Where-Object Name -NotIn $existingHelp
-if ($existingHelp) {
-    $null = Update-MarkdownHelp -Path $Build.Docs.Directory -AlphabeticParamsOrder -ExcludeDontShow
-}
-if ($newCommands) {
-    $newHelpArgs = @{
-        Module                = 'ImportExcel'
-        OutputFolder          = $Build.Docs.Directory
-        Locale                = $Build.Docs.Locale
-        AlphabeticParamsOrder = $true
-        ExcludeDontShow       = $true
-        ErrorAction           = 'SilentlyContinue'
+    Default {
+        throw "Task '$_' not implemented."
     }
-    $null = New-MarkdownHelp @newHelpArgs
 }
 
-# Add online help URL for all commands
-Write-Host "Updating online help URLs" -ForegroundColor Green
-$onlineversionpattern = [regex]::new('(?<=\n)online version:.*?(?=[\r\n])', ([RegexOptions]::IgnoreCase, [RegexOptions]::Multiline))
-foreach ($path in [io.directory]::EnumerateFiles($Build.Docs.Directory, '*.md')) {
-    $baseName = ([fileinfo]$path).BaseName
-    $content = [file]::ReadAllText($path)
-    $content = $onlineVersionPattern.Replace($content, "online version: https://dfinke.github.io/ImportExcel/commands/$baseName")
-    [file]::WriteAllText($path, $content)
+if ($PassThru) {
+    $Build
 }
-$null = New-ExternalHelp -Path $Build.Docs.Directory -OutputPath (Join-Path -Path $Build.Output.Directory -ChildPath $Build.Docs.Locale)
-
-# TODO: Consider whether or not to support "updatable help"
-# The New-ExternalHelpCab generates both a ZIP (PS 6+) and a CAB (all versions)
-# [reference](https://learn.microsoft.com/en-us/powershell/utility-modules/platyps/create-help-using-platyps?view=ps-modules)
-# 
-# $newCabArgs = @{
-#     CabFilesFolder  = Join-Path -Path $Build.Output.Directory -ChildPath $Build.Docs.Locale
-#     LandingPagePath = "$PSScriptRoot/docs/ImportExcel.md"
-#     OutputFolder    = "$PSScriptRoot/docs/"
-# }
-# New-ExternalHelpCab @newCabArgs
-
-$Build

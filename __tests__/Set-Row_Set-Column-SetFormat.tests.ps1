@@ -1,5 +1,4 @@
 ﻿
-
 Describe "Number format expansion and setting" {
     BeforeAll {
         $path = "TestDrive:\test.xlsx"
